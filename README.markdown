@@ -5,3 +5,4 @@ This is a place to put all of the Houdini plugins, scripts, etc… That I work o
 
 ### POPs
 * **Repulse POP** - Creates a small field that helps to keep particles separated, based on their radius.
+* **Bullet POP** - Uses the Bullet library to allow for RBD collisions. Only supports spheres right now.
