@@ -25,8 +25,8 @@
  *----------------------------------------------------------------------------
  */
 
-#ifndef __POP_Impact_h__
-#define __POP_Impact_h__
+#ifndef __POP_Bullet_h__
+#define __POP_Bullet_h__
 
 // If the POP is allowed to access the local variables defined for 
 // particles, need to use the POP_LocalVar class.
@@ -43,7 +43,7 @@
 
 namespace HDK_Sample {
 
-enum POP_ImpactIndex
+enum POP_BulletIndex
 {
     ISL_ACTIVATE,
     ISL_SOURCE,
@@ -58,7 +58,7 @@ typedef struct bulletBodystr {
 } bulletbody;
 
 
-class POP_Impact : public POP_LocalVar
+class POP_Bullet : public POP_LocalVar
 {
 public:
 
@@ -84,16 +84,16 @@ public:
 
 	//btVector3*                          testVar;
 
-    //POP_ImpactBulletState               *state;
+    //POP_BulletBulletState               *state;
 
     //std::map<int, bulletBody> *m_bulletBodies;          // Added by Chris
 
 protected:
 
-	POP_Impact (   OP_Network* net, const char* name, 
+	POP_Bullet (   OP_Network* net, const char* name, 
 			       OP_Operator* entry);
 			       
-    virtual 			~POP_Impact (void);
+    virtual 			~POP_Bullet (void);
 
     virtual OP_ERROR 	cookPop		    (OP_Context &context);
     virtual void        addAttrib       (void* userdata);
