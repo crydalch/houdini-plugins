@@ -107,7 +107,7 @@ newPopOperator (OP_OperatorTable* table)
 {
     table->addOperator(
         new OP_Operator("POP_Bullet",                        // Name
-                        "Impact",                           // English
+                        "Bullet",                           // English
                         POP_Bullet::myConstructor,          // "Constructor"
                         &POP_Bullet::myTemplatePair,        // simple parms
                         1,                                     // MinSources
