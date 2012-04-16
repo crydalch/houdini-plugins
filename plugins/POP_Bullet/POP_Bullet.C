@@ -140,7 +140,7 @@ POP_Bullet::POP_Bullet (    OP_Network* net,
 
     //testVar = new btVector3(1,1,1);
 
-    //cout<<"Just starting bullet world..."<<endl;
+    cout<<"Just starting bullet world..."<<endl;
 
     //dynamicsWorld = NULL;
 
@@ -153,12 +153,12 @@ POP_Bullet::POP_Bullet (    OP_Network* net,
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
     solver = new btSequentialImpulseConstraintSolver;
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-    //cout<<"Finished creating dynamicsWorld..."<<endl;
+    cout<<"Finished creating dynamicsWorld..."<<endl;
 
     // This causes a huge freeze, no error messages, Houdini just goes sub-zero. Why?
     rigidBodies = new std::map<int, bulletbody>();
 
-    //cout<<"Just finished bullet world..."<<endl;
+    cout<<"Just finished bullet world..."<<endl;
 
 }
 
@@ -179,11 +179,11 @@ POP_Bullet::cookPop (OP_Context& context)
     GEO_AttributeHandle     sourceval_gah;
     UT_Interrupt*           boss = UTgetInterrupt();
 
-    //cout<<"Starting to cook, time at: "<<t<<endl;
+    cout<<"Starting to cook, time at: "<<t<<endl;
 
     //btCollisionObjectArray totalObjects;
 
-    //cout<<"Done creating variables..."<<endl;
+    cout<<"Done creating variables..."<<endl;
     
     //
     // Bullet Initialization    
@@ -192,39 +192,37 @@ POP_Bullet::cookPop (OP_Context& context)
     if (dynamicsWorld == NULL)
     {
 
-        cout<<"Just starting bullet world..."<<endl;
+cout<<"Just starting bullet world..."<<endl;
         
         btBroadphaseInterface* broadphase = new btDbvtBroadphase(); // Look at trying to get the CUDA broadphase working...
 
         btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
         btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
-        cout<<"Halfway there..."<<endl;
+cout<<"Halfway there..."<<endl;
         
         btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
         
-        cout<<"Finished solver..."<<endl;
+cout<<"Finished solver..."<<endl;
 
-        cout<<""<<endl;
+cout<<""<<endl;
         
         dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-        cout<<"Finished creating dynamicsWorld..."<<endl;
+cout<<"Finished creating dynamicsWorld..."<<endl;
 
         // This causes a huge freeze, no error messages, Houdini just goes sub-zero. Why?
         rigidBodies = new std::map<int, bulletbody>();
 
-        cout<<"Just finished bullet world..."<<endl;
+cout<<"Just finished bullet world..."<<endl;
     }*/
 
     //
     // End Bullet Initialization
     //
 
-/*
-    cout<<"TestVector: "<<testVar->getX()<<endl;
+/*cout<<"TestVector: "<<testVar->getX()<<endl;
 
     testVar->setX( testVar->getX()+1 );
-    
     cout<<"TestVector (added): "<<testVar->getX()<<endl;
 */
     if (lockInputs(context) >= UT_ERROR_ABORT)
@@ -290,8 +288,8 @@ POP_Bullet::cookPop (OP_Context& context)
     // THOUGHT: Perhaps look at GEOPRIM_Particle's iternateNext() as a faster way to do this?
 
 
-    //cout<<"Getting ready to iterate through each particle..."<<endl;
-    //cout<<"myCurrIter: "<<myCurrIter<<endl<<endl<<endl;
+    cout<<"Getting ready to iterate through each particle..."<<endl;
+    cout<<"myCurrIter: "<<myCurrIter<<endl<<endl<<endl;
     //sleep(3);
 
 
@@ -307,11 +305,11 @@ POP_Bullet::cookPop (OP_Context& context)
         dispatcher = new btCollisionDispatcher(collisionConfiguration);
         solver = new btSequentialImpulseConstraintSolver;
         dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-        //cout<<"Finished creating dynamicsWorld..."<<endl;
+        cout<<"Finished creating dynamicsWorld..."<<endl;
 
         // This causes a huge freeze, no error messages, Houdini just goes sub-zero. Why?
         rigidBodies = new std::map<int, bulletbody>();
-        //cout<<"cleaned the house, built world :) "<<endl;
+        cout<<"cleaned the house, built world :) "<<endl;
     }
 /*
     else
@@ -331,7 +329,7 @@ POP_Bullet::cookPop (OP_Context& context)
         GA_FOR_ALL_GROUP_POINTS(data->getDetail(), sourceGroup, ppt)
         {
             getVeloc(ppt, data, t, sourceval_gah);
-            //cout<<"myCurrIter: "<<myCurrIter<<endl;
+            cout<<"myCurrIter: "<<myCurrIter<<endl;
             //sleep(0.5);
             myCurrIter++;
         }
@@ -346,23 +344,23 @@ POP_Bullet::cookPop (OP_Context& context)
                 goto done;
             
             GEO_Point *ppt;
-            //cout<<"First level of per particle loop: "<<myCurrIter<<endl;
-            //cout<<"part= "<<part<<endl;
+            cout<<"First level of per particle loop: "<<myCurrIter<<endl;
+            cout<<"part= "<<part<<endl;
             for (POP_ParticleIterator it(part); !it.atEnd(); ++it)
             {
                 ppt = part->getParent()->getGEOPoint(*it);
                 myCurrPtOff = ppt->getMapOffset();
-                //cout<<"Inside loop, going into getVeloc on iter: "<<myCurrIter<<endl;
+                cout<<"Inside loop, going into getVeloc on iter: "<<myCurrIter<<endl;
                 getVeloc(ppt, data, t, sourceval_gah);
-                //cout<<"myCurrIter: "<<myCurrIter<<" myCurrPt: "<<myCurrPt<<endl;
-                //cout<<""<<endl<<endl<<endl<<endl;
+                cout<<"myCurrIter: "<<myCurrIter<<" myCurrPtOff: "<<myCurrPtOff<<endl;
+                cout<<""<<endl<<endl<<endl<<endl;
                 //sleep(0.5);
                 myCurrIter++;
             }
         }
     }
 
-    //cout<<"About to step through world..."<<endl;
+    cout<<"About to step through world..."<<endl;
     //sleep(3);
 
     // Step through the bullet simulation once
@@ -375,16 +373,16 @@ POP_Bullet::cookPop (OP_Context& context)
     /*    
     for (int size=0; size < totalObjects.size(); size++)
     {
-        cout<<"Number of objects in bullet world: "<<size+1<<endl;
-        cout<<"Veloc of Bullet Object: "<<
+cout<<"Number of objects in bullet world: "<<size+1<<endl;
+cout<<"Veloc of Bullet Object: "<<
     }*/
-    //cout<<"--------------------------------"<<endl<<endl;
+    cout<<"--------------------------------"<<endl<<endl;
 
-    //cout<<"Finished stepping through world..."<<endl;
+    cout<<"Finished stepping through world..."<<endl;
 
     // Now take the velocity from the bulletBodies and apply it back onto the particles
 
-    //cout<<"About to start setVelocity() function..."<<endl;
+    cout<<"About to start setVelocity() function..."<<endl;
     
     if (sourceGroup)
     {
@@ -392,7 +390,7 @@ POP_Bullet::cookPop (OP_Context& context)
         GA_FOR_ALL_GROUP_POINTS(data->getDetail(), sourceGroup, ppt)
         {
             setVeloc(ppt, data, t);
-            //cout<<"myCurrIter: "<<myCurrIter<<endl;
+            cout<<"myCurrIter: "<<myCurrIter<<endl;
             //sleep(0.5);
             myCurrIter++;
         }
@@ -407,16 +405,16 @@ POP_Bullet::cookPop (OP_Context& context)
                 goto done;
             
             GEO_Point *ppt;
-            //cout<<"First level of per particle loop: "<<myCurrIter<<endl;
-            //cout<<"part= "<<part<<endl;
+            cout<<"First level of per particle loop: "<<myCurrIter<<endl;
+            cout<<"part= "<<part<<endl;
             for (POP_ParticleIterator it(part); !it.atEnd(); ++it)
             {
                 ppt = part->getParent()->getGEOPoint(*it);
                 myCurrPtOff = ppt->getMapOffset();
-                //cout<<"Inside loop, going into getVeloc on iter: "<<myCurrIter<<endl;
+                cout<<"Inside loop, going into getVeloc on iter: "<<myCurrIter<<endl;
                 setVeloc(ppt, data, t);
-                //cout<<"myCurrIter: "<<myCurrIter<<" myCurrPt: "<<myCurrPt<<endl;
-                //cout<<""<<endl<<endl<<endl<<endl;
+                cout<<"myCurrIter: "<<myCurrIter<<" myCurrPtOff: "<<myCurrPtOff<<endl;
+                cout<<""<<endl<<endl<<endl<<endl;
                 //sleep(0.5);
                 myCurrIter++;
             }
@@ -438,7 +436,7 @@ POP_Bullet::cookPop (OP_Context& context)
     delete collisionConfiguration;
     delete broadphase;
 */
-    //cout<<"Done with cook, with time at:"<<t<<endl<<endl<<"|--------------------------------------|"<<endl<<endl<<endl<<endl<<endl;
+    cout<<"Done with cook, with time at:"<<t<<endl<<endl<<"|--------------------------------------|"<<endl<<endl<<endl<<endl<<endl;
 
 done:
 
@@ -468,7 +466,7 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
     UT_Color            RGBtoHSV(UT_RGB);
 
     
-    //cout<<"In getVeloc..."<<endl;
+    cout<<"In getVeloc..."<<endl;
 
     //
     // Get variables to send data to bullet engine
@@ -500,7 +498,7 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
     btShape = sourceval_gah.getI();
         
     
-    //cout<<" id: "<<id<<" Mass: "<<mass<<" pscale: "<<pscale<<endl;
+    cout<<" id: "<<id<<" Mass: "<<mass<<" pscale: "<<pscale<<endl;
 
     //
     // Add a loop here to see if the id matches the dead list; if it does, remove the bulletbody
@@ -508,12 +506,12 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
     
     rigidBodiesIt = rigidBodies->find(id);
 
-    //cout<<"rigidBodiesIt (id): "<<(*rigidBodiesIt).first<<endl;
+    cout<<"rigidBodiesIt (id): "<<(*rigidBodiesIt).first<<endl;
 
     // If there is no bulletbody mapped to this id, create the sphere at this position
     if ( rigidBodiesIt == rigidBodies->end() )               
     {
-        //cout<<"Nothing in rigidBodies map..."<<endl;
+        cout<<"Nothing in rigidBodies map..."<<endl;
 
         btCollisionShape* fallShape = NULL;   // TODO put pscale attr here
 
@@ -538,7 +536,7 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
         fallRigidBody = new btRigidBody(fallRigidBodyCI);
         dynamicsWorld->addRigidBody(fallRigidBody);
 
-        //cout<<"fallRigidBody: "<<fallRigidBody<<endl;
+        cout<<"fallRigidBody: "<<fallRigidBody<<endl;
 
         //Add the bulletbody to the rigidBodies map 
         // EXAMPLE: state->m_bulletBodies->insert(std::make_pair( currObject->getObjectId(), currBody ));
@@ -546,16 +544,16 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
         currBody.popId = id;
         currBody.bodyId = fallRigidBody;
 
-        //cout<<"currBody: "<<currBody.bodyId<<endl<<endl;
+        cout<<"currBody: "<<currBody.bodyId<<endl<<endl;
         
         rigidBodies->insert( std::make_pair(id,currBody) );
         
         rigidBodiesIt = rigidBodies->find(id);
 
         
-        //cout<<"rigidBody added..."<<endl<<endl;
+        cout<<"rigidBody added..."<<endl<<endl;
 
-        //cout<<"rigidBodiesIt: "<<(*rigidBodiesIt).first<<" "<<(*rigidBodiesIt).second.bodyId<<endl<<endl;
+        cout<<"rigidBodiesIt: "<<(*rigidBodiesIt).first<<" "<<(*rigidBodiesIt).second.bodyId<<endl<<endl;
 
     }
     
@@ -563,11 +561,11 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
 
     if (rigidBodiesIt != rigidBodies->end() )
     {
-        //cout<<"... Ready to do PtVeloc to btVeloc ..."<<endl;
+        cout<<"... Ready to do PtVeloc to btVeloc ..."<<endl;
         rigidBodiesIt = rigidBodies->find(id);
     
         (rigidBodiesIt->second.bodyId)->setLinearVelocity( btVector3(vel[0],vel[1],vel[2]) );
-        //cout<<"Part -> Bullet veloc..."<<endl<<endl;
+        cout<<"Part -> Bullet veloc..."<<endl<<endl;
     }
     
 
@@ -582,7 +580,7 @@ POP_Bullet::getVeloc ( GEO_Point* ppt, POP_ContextData* data, float t, GEO_Attri
     //bodyIt = state->m_bulletBodies->find( myCurrPt );
     
     //bodyIt = state->m_bulletBodies->end();
-    //cout<<"End of getVelocity function!"<<endl<<endl;
+    cout<<"End of getVelocity function!"<<endl<<endl;
     
 }
 
@@ -625,16 +623,16 @@ POP_Bullet::setVeloc ( GEO_Point* ppt, POP_ContextData* data, float t )
         (*rigidBodiesIt).second.bodyId->getMotionState()->setWorldTransform(btrans);
     }
         
-    //cout<<"Inside of setVeloc function (still).."<<endl;
-    //cout<<"TimeStep: "<<t<<endl
-    //cout << "rigidBodiesIt: " << &rigidBodiesIt << endl;
-    //cout << "rigidBodiesIt.second: " << &((*rigidBodiesIt).second) << endl;
-    //cout << "rigidBodiesIt.second.bodyId: " << (*rigidBodiesIt).second.bodyId<<endl;
-    //cout<<"rigidBodiesIt.second: "<<endl;//(*rigidBodiesIt).second.bodyId<<endl;
+    cout<<"Inside of setVeloc function (still).."<<endl;
+    cout<<"TimeStep: "<<t<<endl;
+    cout << "rigidBodiesIt: " << &rigidBodiesIt << endl;
+    cout << "rigidBodiesIt.second: " << &((*rigidBodiesIt).second) << endl;
+    cout << "rigidBodiesIt.second.bodyId: " << (*rigidBodiesIt).second.bodyId<<endl;
+    cout<<"rigidBodiesIt.second: "<<endl;//(*rigidBodiesIt).second.bodyId<<endl;
     
     //btVel = (*rigidBodiesIt).second.bodyId->getLinearVelocity();
 
-    //cout<<"Bullet Veloc: "<<UT_Vector3(btVel[0],btVel[1],btVel[2] )<<endl;
+    cout<<"Bullet Veloc: "<<UT_Vector3(btVel[0],btVel[1],btVel[2] )<<endl;
     
     
     // TODO position and rotation probably need to be used, if we're using these for the granules
@@ -659,7 +657,7 @@ POP_Bullet::cleanSystem()
 
     if (dynamicsWorld != NULL)
     {
-        //cout<<"Starting to destroy the (bullet) world..."<<endl;
+        cout<<"Starting to destroy the (bullet) world..."<<endl;
 
         for( int i =  dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; --i ) 
         {
@@ -688,6 +686,6 @@ POP_Bullet::cleanSystem()
         rigidBodies->clear();
         delete rigidBodies;
         
-        //cout<<"... finished destroying the world. Muahahahaha!"<<endl;
+        cout<<"... finished destroying the world. Muahahahaha!"<<endl;
     }
 }
