@@ -48,8 +48,6 @@ SOP_Pack::~SOP_Pack()
 
 OP_ERROR SOP_Pack::cookInputGroups(OP_Context &context, int alone)
 {
-    // The SOP_Node::cookInputPointGroups() provides a good default
-    // implementation for just handling a point selection.
     return cookInputPointGroups(context, myGroup, myDetailGroupPair, alone);
 }
 
