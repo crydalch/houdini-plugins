@@ -10,7 +10,7 @@ Items in **bold** are current/ip, and _italicized_ are planned/ideas, regardless
 * **Bullet POP** - Uses the Bullet library to allow for RBD collisions. Only supports spheres right now, and is missing robust rotation support.
 
 ### SOPs
-* _Pack SOP_ - Uses the Bullet Library to pack a series of objects together.
+* **Pack SOP** - Uses the Bullet Library to pack a series of objects together.
 * _Bullet SOP_ - Takes a series of points, simulates for the hip file's frame range, and caches the resulting points
     * This might need to replace the Bullet DOP, if that solver can't scale up to hundreds of thousands of bodies.
 
