@@ -66,10 +66,6 @@ OP_ERROR SOP_Pack::cookMySop(OP_Context &context)
     // Duplicate input geometry
     duplicateSource(0, context);
 
-    flags().timeDep = 1;
-
-    frame = OPgetDirector()->getChannelManager()->getSample(context.getTime());
-    frame *= 0.5;
     npts = gdp->points().entries();
 
     GEO_AttributeHandle     Phandle, Rhandle;
@@ -82,11 +78,11 @@ OP_ERROR SOP_Pack::cookMySop(OP_Context &context)
     getPos(Phandle, Rhandle, npts);
 
     //Step Bullet World Here
-    dynamicsWorld->stepSimulation(0.1,10);
+    dynamicsWorld->stepSimulation(0.12,240);
 
     setPos(Phandle, Rhandle, npts);
 
-    //
+    //cleanSystem();
     emptyWorldOfBodies();
 
     unlockInputs();
@@ -106,8 +102,8 @@ void SOP_Pack::getPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
     {
         posHandle.setElement(gdp->points()(i));
         p = posHandle.getV4();
-        //rotHandle.setElement(gdp->points()(i));
-        //r = rotHandle.getV4();
+        rotHandle.setElement(gdp->points()(i));
+        r = rotHandle.getV4();
         //cout<<"\tPtNo: "<< i <<" p: "<< p <<" r: "<<endl;// r <<endl;
         //temporarily assign fallShape to a sphere, then we'll we get our convex shape working
         fallShape = new btSphereShape(0.5);
@@ -146,7 +142,7 @@ void SOP_Pack::setPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
         r = rotHandle.getV4();
 
         posHandle.setV4(UT_Vector4(btPos[0],btPos[1],btPos[2],1));
-        //rotHandle.setV4(UT_Vector4(btRot[0],btRot[1],btRot[2],btRot[3]));
+        rotHandle.setV4(UT_Vector4(btRot[0],btRot[1],btRot[2],btRot[3]));
     }
 }
 
