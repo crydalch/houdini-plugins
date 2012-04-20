@@ -97,12 +97,81 @@ void SOP_Pack::getPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
 {
     UT_Vector4              p, r;
     bulletbody              currBody;
+    btConvexHullShape*      fallConvexShape = NULL;
     btCollisionShape*       fallShape = NULL;
     btRigidBody*            fallRigidBody = NULL;
     btDefaultMotionState*   fallMotionState = NULL;
-    btScalar                btMass = 10;
+    btScalar                btMass = 1;
+    btQuaternion            bt_rot;
 
     UT_AutoInterrupt progress("Pack SOP: getting points");
+
+    const btVector3 jellyBeanVerts[] =
+        {
+            btVector3(0.013135,-0.027011,0.013135),
+            btVector3(-0.013135,-0.027011,-0.013135),
+            btVector3(0.012784,-0.002048,0.012784),
+            btVector3(-0.012784,-0.002048,-0.012784),
+            btVector3(-0.013135,-0.028933,-0.013135),
+            btVector3(0.013135,-0.028933,0.013135),
+            btVector3(-0.012784,-0.004230,-0.012784),
+            btVector3(0.012784,-0.004230,0.012784),
+            btVector3(-0.023708,0.019194,-0.023708),
+            btVector3(0.023708,0.019194,0.023708),
+            btVector3(-0.023708,0.020342,-0.023708),
+            btVector3(0.023708,0.020342,0.023708),
+            btVector3(0.024098,-0.027244,0.024098),
+            btVector3(-0.024098,-0.027244,-0.024098),
+            btVector3(0.024098,-0.026337,0.024098),
+            btVector3(-0.024098,-0.026337,-0.024098),
+            btVector3(0.000000,-0.018784,0.000000),
+            btVector3(0.000000,-0.021075,0.000000),
+            btVector3(0.000000,0.013102,0.000000),
+            btVector3(0.000000,0.033759,0.000000),
+            btVector3(0.000000,0.015059,0.000000),
+            btVector3(0.000000,-0.037049,0.000000),
+            btVector3(0.000000,-0.033759,0.000000),
+            btVector3(0.000000,-0.035526,0.000000),
+            btVector3(0.026071,-0.011407,0.026071),
+            btVector3(0.034469,0.000000,0.034469),
+            btVector3(0.026071,-0.009663,0.026071),
+            btVector3(-0.026071,-0.009663,-0.026071),
+            btVector3(-0.034469,0.000000,-0.034469),
+            btVector3(-0.026071,-0.011407,-0.026071),
+            btVector3(0.016407,-0.016271,0.016407),
+            btVector3(0.000000,-0.032276,0.000000),
+            btVector3(-0.016407,-0.016271,-0.016407),
+            btVector3(0.000000,-0.000765,0.000000),
+            btVector3(-0.016407,-0.018434,-0.016407),
+            btVector3(0.000000,-0.034262,0.000000),
+            btVector3(0.016407,-0.018434,0.016407),
+            btVector3(0.000000,-0.003081,0.000000),
+            btVector3(-0.019232,0.007080,-0.019232),
+            btVector3(0.019232,0.007080,0.019232),
+            btVector3(0.000000,0.026791,0.000000),
+            btVector3(-0.025852,0.025319,-0.025852),
+            btVector3(0.025852,0.025319,0.025852),
+            btVector3(0.000000,0.027978,0.000000),
+            btVector3(-0.019232,0.008987,-0.019232),
+            btVector3(0.019232,0.008987,0.019232),
+            btVector3(0.019914,-0.030523,0.019914),
+            btVector3(-0.019914,-0.030523,-0.019914),
+            btVector3(0.000000,-0.035115,0.000000),
+            btVector3(0.025852,-0.025319,0.025852),
+            btVector3(-0.025852,-0.025319,-0.025852),
+            btVector3(0.000000,-0.034249,0.000000),
+            btVector3(0.019914,-0.028944,0.019914),
+            btVector3(-0.019914,-0.028944,-0.019914),
+            btVector3(0.031880,-0.003848,0.031880),
+            btVector3(0.031880,-0.002820,0.031880),
+            btVector3(-0.031880,-0.002820,-0.031880),
+            btVector3(-0.031880,-0.003848,-0.031880),
+        };
+
+    fallConvexShape = new btConvexHullShape();
+
+    for (int s=0;s<58;s++)
+        fallConvexShape->addPoint(jellyBeanVerts[2]);
 
     //cout<<"getPos()"<<endl;
     for (int i = 0; i < numPoints; i++)
@@ -118,13 +187,18 @@ void SOP_Pack::getPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
         p = posHandle.getV4();
         rotHandle.setElement(gdp->points()(i));
         r = rotHandle.getV4();
+
+        // Didn't realize this was an issue, might be why the jelly bean shapes weren't rotating earlier! I'm
+        //      so glad this fact was noted in the SIM_SolverBullet code!
+        bt_rot.setEulerZYX( r.z(), r.y(), r.x() );
+
         //cout<<"\tPtNo: "<< i <<" p: "<< p <<" r: "<<endl;// r <<endl;
         //temporarily assign fallShape to a sphere, then we'll we get our convex shape working
-        fallShape = new btSphereShape(0.5);
+        fallShape = new btBoxShape(btVector3(1,1,1));
 
-        fallMotionState = new btDefaultMotionState(btTransform( btQuaternion(0,0,0,1),btVector3(p.x(),p.y(),p.z()) ));
+        fallMotionState = new btDefaultMotionState(btTransform( bt_rot,btVector3(p.x(),p.y(),p.z()) ));
 
-        btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(btMass,fallMotionState,fallShape);
+        btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(btMass,fallMotionState,fallConvexShape);
         fallRigidBody = new btRigidBody(fallRigidBodyCI);
         dynamicsWorld->addRigidBody(fallRigidBody);
 
@@ -165,7 +239,7 @@ void SOP_Pack::setPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
         r = rotHandle.getV4();
 
         posHandle.setV4(UT_Vector4(btPos[0],btPos[1],btPos[2],1));
-        rotHandle.setV4(UT_Vector4(btRot[0],btRot[1],btRot[2],btRot[3]));
+        rotHandle.setV4(UT_Vector4(btRot[2],btRot[1],btRot[0],btRot[3]));
     }
 }
 
