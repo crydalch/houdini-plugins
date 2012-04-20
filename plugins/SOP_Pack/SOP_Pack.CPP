@@ -1,4 +1,5 @@
 #include <UT/UT_DSOVersion.h>
+#include <UT/UT_Interrupt.h>
 #include <SYS/SYS_Math.h>
 #include <GU/GU_Detail.h>
 #include <GEO/GEO_AttributeHandle.h>
@@ -42,7 +43,11 @@ OP_Node *SOP_Pack::myConstructor(OP_Network *net, const char *name, OP_Operator 
 SOP_Pack::SOP_Pack(OP_Network *net, const char *name, OP_Operator *op)
     : SOP_Node(net, name, op)
 {
+    // btVector3 bbMin(-100,-100,-100);
+    // btVector3 bbMax(100,100,100);
+    // broadphase = new btAxisSweep3(bbMin,bbMax,12000);
     broadphase = new btDbvtBroadphase();
+
     collisionConfiguration = new btDefaultCollisionConfiguration();
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
     solver = new btSequentialImpulseConstraintSolver;
@@ -57,7 +62,6 @@ SOP_Pack::~SOP_Pack()
 
 OP_ERROR SOP_Pack::cookMySop(OP_Context &context)
 {
-    fpreal       frame;
     int          npts;
 
     if (lockInputs(context) >= UT_ERROR_ABORT)
@@ -97,9 +101,19 @@ void SOP_Pack::getPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
     btRigidBody*            fallRigidBody = NULL;
     btDefaultMotionState*   fallMotionState = NULL;
     btScalar                btMass = 10;
+
+    UT_AutoInterrupt progress("Pack SOP: getting points");
+
     //cout<<"getPos()"<<endl;
     for (int i = 0; i < numPoints; i++)
     {
+
+        if (progress.wasInterrupted())
+        {
+            emptyWorldOfBodies();
+            break;
+        }
+
         posHandle.setElement(gdp->points()(i));
         p = posHandle.getV4();
         rotHandle.setElement(gdp->points()(i));
@@ -127,8 +141,17 @@ void SOP_Pack::setPos(GEO_AttributeHandle& posHandle, GEO_AttributeHandle& rotHa
     btVector3               btPos;
     btQuaternion            btRot;
     //cout<<"setPos()"<<endl;
+
+    UT_AutoInterrupt progress("Pack SOP: packing points");
+
     for (int i = 0; i < numPoints; i++)
     {
+        if (progress.wasInterrupted())
+        {
+            emptyWorldOfBodies();
+            break;
+        }
+
         rigidBodiesIt = rigidBodies->find(i);
         btPos = (*rigidBodiesIt).second.bodyId->getCenterOfMassPosition();
         btRot = (*rigidBodiesIt).second.bodyId->getOrientation();
