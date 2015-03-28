@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <!-- This file contains definitions of Python interfaces and the
+ interfaces menu.  It should not be hand-edited when it is being
+ used by the application.  Note, that two definitions of the
+ same interface or of the interfaces menu are not allowed
+ in a single file. -->
+  <interface name="snippets_panel" label="Snippets" icon="BUTTONS_cut">
+    <script><![CDATA[from PySide import QtGui
+from PySide import QtCore
+from PySide import QtWebKit
+
+import random, string, ast, tempfile, os
+from os import listdir, environ
+from os.path import isfile, join
+
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name
+from pygments.formatters import HtmlFormatter, RtfFormatter
+
+import hou
+
+class snippetFrame(QtGui.QFrame):
+    def __init__(self, parent=None):
+        
+        """
+        The snippet frame is a Python panel for simple code snippet management. It
+        is designed to work with the various Wrangle SOPs, and Python SOPs.
+        
+        In the future, it is hoped that we can support all varieties of Wrangle-like
+        code snippets such as OpenCL, Script Solvers, etc...
+        """
+        
+        super(snippetFrame, self).__init__(parent)
+        
+        # Stores the snippet names, code, and files
+        self.snippetsDict = {}
+        self.extDict = {"VEX":"scala","Python":"python"}
+        self.snippetsDir = "%s/snippets" % environ["HIH"]
+        self.snippetsFile = self.snippetsDir + '/mysnippets.dictionary'
+        
+        
+        # create dir if missing, so we can save configs and stuff (if we want to)
+        basedir = os.path.dirname(self.snippetsFile)
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+            
+        # Read Snippets from Dictionary on disk (if it exists)
+        self.readDictFromDisk()
+        
+        
+        # Tree Widget for list of snippets
+        self.snippetTree = QtGui.QTreeWidget(self)
+        snippetTreeHeader = QtGui.QTreeWidgetItem(["Name","Type"])
+        self.snippetTree.setHeaderItem(snippetTreeHeader)
+        self.snippetTree.setSortingEnabled(True)  
+
+        # Setup Context Menus for Tree Widget; 
+        #       this is where we save the snippets dictionary
+        self.menu = QtGui.QMenu(parent)
+        self.vexAction = QtGui.QAction("&VEX", self, triggered=self.__setVex)
+        self.pyAction = QtGui.QAction("&Python", self, triggered=self.__setPython)
+        self.saveAction = QtGui.QAction("&Save to disk...", self, triggered=self.writeDictToDisk)
+       
+        self.snippetTree.addAction(self.vexAction)
+        self.snippetTree.addAction(self.pyAction)
+        self.snippetTree.addAction(self.saveAction)
+        
+        self.snippetTree.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        
+        # Populate the tree with files contained in the $HIH/snippets dir
+        self.refreshList()
+        self.snippetTree.setColumnWidth(0,250)     
+        self.snippetTree.resizeColumnToContents(1) 
+        
+        self.snippetTree.itemClicked.connect(self.itemClicked)
+        
+        # Create webView to display the snippets
+        self.webView = QtWebKit.QWebView()
+        
+        # Create TextEdit widget, with proper tab spaces, for editing code
+        self.te = QtGui.QTextEdit()
+        font = QtGui.QFont()
+        font.setFamily("Courier")
+        font.setStyleHint(QtGui.QFont.Monospace)
+        font.setFixedPitch(True)
+        font.setPointSize(12)
+        spaceWidth = QtGui.QFontMetrics(font).width(' ')
+        self.te.setSizePolicy(QtGui.QSizePolicy.Expanding,QtGui.QSizePolicy.Expanding)
+        self.te.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.te.setFontPointSize(11)
+        self.te.setTabStopWidth(4 * spaceWidth)
+        self.te.setReadOnly(False)
+        
+        self.te.textChanged.connect(self.updateText)
+        
+        # Widget to edit the name of a snippet
+        self.snippetTitle = QtGui.QLineEdit()
+        
+        # Organize snippet edit mode
+        editWidget = QtGui.QWidget()
+        editLayout = QtGui.QVBoxLayout()
+        editLayout.addWidget(self.snippetTitle)
+        editLayout.addWidget(self.te)
+        editWidget.setLayout(editLayout)
+        
+        
+        # Widget stack to switch between viewer and editor
+        self.widgetStack = QtGui.QStackedWidget()
+        self.widgetStack.addWidget(self.webView)
+        self.widgetStack.addWidget(editWidget)
+        self.widgetStack.setCurrentIndex(0)
+        
+        # Setup interface buttons
+        btnLayout = QtGui.QHBoxLayout()
+        newBtn = self.__mkBtn(0,"Create new snippet.")
+        newFromSelBtn = self.__mkBtn(1,"Create new snippet from the selected node(s).\n\nCurrently only works with Wrangles and Python SOPs.")
+        applyToSelBtn = self.__mkBtn(2,"Apply current snippet to selected node(s).")
+        delBtn = self.__mkBtn(6,"Delete the current snippet.")
+        editBtn = self.__mkBtn(4,"Edit selected snippet.")
+        saveBtn = self.__mkBtn(5,"Save currently edited snippet.")
+        
+        editBtn.clicked.connect(self.editSnippet)
+        saveBtn.clicked.connect(self.saveCurrentEdit)
+        delBtn.clicked.connect(self.deleteSnippet)
+        newBtn.clicked.connect(self.newSnippet)
+        
+        # Setup Edit/Save button stack
+        self.editSaveStack = QtGui.QStackedWidget()
+        self.editSaveStack.addWidget(editBtn)
+        self.editSaveStack.addWidget(saveBtn)
+        self.editSaveStack.setCurrentIndex(0)
+        
+        
+        # Layout for the top row buttons
+        btnLayout.addWidget(newBtn)
+        #btnLayout.addWidget(newFromSelBtn)
+        #btnLayout.addWidget(applyToSelBtn)
+        btnLayout.addWidget(delBtn)
+        btnLayout.addStretch(1)
+        btnLayout.addWidget(self.editSaveStack)
+        
+        # Adjustable splitter for snippets list and viewer/editor
+        splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter.addWidget(self.snippetTree)
+        splitter.addWidget(self.widgetStack)
+        splitter.setStretchFactor(0,0)
+        splitter.setStretchFactor(1,1)
+        
+        layout = QtGui.QVBoxLayout()
+        layout.addLayout(btnLayout)
+        layout.addWidget(splitter)
+                
+        self.setLayout(layout)
+        
+    def writeDictToDisk(self):    
+        
+        """
+        Writes the in-memory dictionary (self.snippetsDict) to disk. In the future,
+        the panel will support tabs, and each tab will be it's own dictionary file.
+        """
+        
+        f = open(self.snippetsFile, mode='w')
+        f.write(str(self.snippetsDict))
+        f.close()    
+        
+    def readDictFromDisk(self):
+        
+        """
+        Reads the dictionary from disk. If the file doesn't exist, or otherwise
+        can't be read, a new blank dictionary will be setup.
+        """
+        
+        try:
+            with open(self.snippetsFile, 'r') as f:
+                d = f.read()
+                self.snippetsDict = ast.literal_eval(d)
+        except:
+            self.snippetsDict = {}
+    
+    def updateText(self):
+        
+        """
+        Updates the in-memory snippets dictionary.
+        """
+        
+        txt = self.te.toPlainText()
+        #print "foo", self.snippetTree.currentItem().text(0)
+        ext = self.snippetsDict[self.snippetTree.currentItem().text(0)][1]
+        #newText = self.__colorText(ext,txt)
+        #self.te.setHtml(newText)
+        
+    def __colorText(self,extFmt="VEX",text=""):
+        """
+        Create the syntax-colored HTML using Pygments.
+        """
+        
+        #print "FOOBAR\n", extFmt, "\nFOOBAR\n"
+        #print self.extDict[extFmt]
+        lxfmt = self.extDict.get(extFmt)
+        lexer = get_lexer_by_name(lxfmt, stripall=True)
+        formatter = HtmlFormatter(line_numbers=False, full=True, style="native", nowrap=False)
+        #formatter = RtfFormatter(encoding="utf-8")
+        coloredText = highlight(text, lexer, formatter)   
+        
+        return coloredText
+    
+    def __mkBtn(self,ico,tip,name=""):
+    
+        """
+        Simplify creating QPushButtons.
+        """
+    
+        icoDir = "%s/houdini/help/icons/medium/BUTTONS/" % environ["HFS"]
+        btnIcons = ["plus.png","bundle_select_add.png","chooser_node.png",
+                    "reload.png","edit.png","chooser_file.png","delete.png"]
+        
+        btn = QtGui.QPushButton(name)
+        btn.setIcon(QtGui.QIcon(icoDir+btnIcons[ico]))
+        btn.setIconSize(QtCore.QSize(24,24))
+        btn.setToolTip(tip)
+
+        return btn
+    
+        ### TODO: Consolidate these __set functions
+        
+    def __setVex(self):
+    
+        """
+        Set the snippet syntax to VEX.
+        """
+    
+        item = self.snippetTree.currentItem().text(0)
+        self.snippetsDict[item][1] = "VEX"
+        self.refreshList()
+        snippetText = self.__colorText( self.snippetsDict.get(item)[1],
+                                        self.snippetsDict.get(item)[0])
+        self.webView.setHtml(snippetText)
+    
+    def __setPython(self):
+    
+        """
+        Set the snippet syntax to Python.
+        """
+    
+        item = self.snippetTree.currentItem().text(0)
+        self.snippetsDict[item][1] = "Python"
+        self.refreshList()
+        snippetText = self.__colorText( self.snippetsDict.get(item)[1],
+                                        self.snippetsDict.get(item)[0])
+        self.webView.setHtml(snippetText)
+            
+    def refreshList(self):
+    
+        """
+        Refreshes the list of snipppets based on the in-memory dictionary.
+        """
+    
+        #self.createDictFromFiles()
+        self.snippetTree.clear()
+        for snip in self.snippetsDict.keys():
+            extension = self.snippetsDict.get(snip)[1]
+            item = QtGui.QTreeWidgetItem([snip,extension])
+            self.snippetTree.addTopLevelItem(item)
+        self.snippetTree.update()
+    
+    def itemClicked(self):
+    
+        """
+        When an item is clicked, the viewer window needs to change to display it.
+        """
+        
+        #print "\n\nHERE", self.snippetTree.currentItem()
+        item = self.snippetTree.currentItem().text(0)
+        snippetText = self.__colorText( self.snippetsDict.get(item)[1],
+                                        self.snippetsDict.get(item)[0])
+        self.widgetStack.currentWidget().setHtml(snippetText)
+        self.__updateViewWindow()
+        #self.snippetTree.closePersistentEditor(0)
+
+    def rg(self):
+    
+        """
+        Random number/character generator.
+        """
+        
+        chars=string.ascii_uppercase + string.digits
+        randRange = random.randint(5,15)
+        return ''.join(random.choice(chars) for x in range(randRange))
+        
+    def newSnippet(self, suffix=""):
+        
+        """
+        Creates a new snippet with a unique name.
+        """
+        
+        randName = "snippet_" + tempfile.NamedTemporaryFile().name.split('/')[-1] + suffix
+        self.snippetsDict[randName] = ["//Your new snippet!\n\n@foo = 1.0;","VEX"]
+        self.refreshList()
+        
+    def newSnippetFromSelWrangles(self):
+    
+        """
+        For each selected Wrangle, create a new snippet based on the current contents.
+        """
+        
+        return 1
+       
+    def deleteSnippet(self):
+    
+        """
+        Deletes the currently selected snippet.
+        """
+        
+        item = self.snippetTree.currentItem()
+
+        if item:
+            choice = hou.ui.displayMessage("Remove %s" %(self.snippetTree.currentItem().text(0)), 
+                                            title="Delete the current snippet?",
+                                            buttons=("Yes","No"),
+                                            severity=hou.severityType.ImportantMessage)
+            if not choice:
+                del self.snippetsDict[item.text(0)]
+                self.refreshList()
+        
+    def __updateViewWindow(self):
+    
+        """
+        Update the snippet view text.
+        """
+        
+        item = self.snippetTree.currentItem().text(0)
+        #print "FOOBAR", self.snippetsDict.get(item)
+        snippetText = self.__colorText( self.snippetsDict.get(item)[1],
+                                        self.snippetsDict.get(item)[0])
+        self.webView.setHtml(snippetText)
+        
+    def __updateEditWindow(self):
+    
+        """
+        Update the snippet editor text.
+        """
+        
+        item = self.snippetTree.currentItem().text(0)
+        self.te.setText(self.snippetsDict.get(item)[0])
+        self.snippetTitle.setText(item)
+        
+    def __resetEditBtn(self):
+    
+        """
+        Reverts from edit, back to viewer.
+        """
+        
+        self.editSaveStack.setCurrentIndex(0)
+        self.widgetStack.setCurrentIndex(0)
+        self.__updateViewWindow()
+    
+    def appendSnippetToSelectedNode(self):
+    
+        """
+        For each of the selected wrangle nodes, set the code to the current snippet.
+        """
+        
+        return 1
+    
+    ### CURRENT STATUS: Delete an entry, add indicator of unsaved snippets
+        
+    def saveCurrentEdit(self):
+    
+        """
+        Save the currently edited snippet, updating the list, dictionary, and switching
+        the window from editor to viewer.
+        """
+        
+        item = self.snippetTree.currentItem().text(0)
+        self.snippetsDict.get(item)[0] = self.te.toPlainText()
+        newTitle = self.snippetTitle.text()
+        self.snippetsDict[newTitle] = self.snippetsDict.pop(item)
+        self.snippetTree.currentItem().setText(0,newTitle)
+        #self.snippetTree.closePersistentEditor(self.snippetTree.currentItem())
+        self.__resetEditBtn()
+        
+    def editSnippet(self):
+    
+        """
+        Edit the currently selected snippet.
+        """
+        
+        self.editSaveStack.setCurrentIndex(1)
+        self.widgetStack.setCurrentIndex(1)
+        #self.snippetTree.openPersistentEditor(self.snippetTree.currentItem())
+        self.__updateEditWindow()
+        
+                
+def createInterface():
+    return snippetFrame()
+
+]]></script>
+  </interface>
+</pythonPanelDocument>
