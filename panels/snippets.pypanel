@@ -14,6 +14,8 @@ import random, string, ast, tempfile, os
 from os import listdir, environ
 from os.path import isfile, join
 
+import hou
+
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter, RtfFormatter
@@ -291,12 +293,28 @@ class snippetFrame(QtGui.QFrame):
     def newSnippet(self, suffix=""):
         
         """
-        Creates a new snippet with a unique name.
+        Creates a new snippet with a unique name. If shift is held, create snippets from selected wrangles.
         """
         
-        randName = "snippet_" + tempfile.NamedTemporaryFile().name.split('/')[-1] + suffix
-        self.snippetsDict[randName] = ["//Your new snippet!\n\n@foo = 1.0;","VEX"]
-        self.refreshList()
+        modifiers = QtGui.QApplication.keyboardModifiers()
+        
+        if modifiers == QtCore.Qt.ShiftModifier:
+            for node in hou.selectedNodes():
+                # Checks if the node is a wrangle, and if the snippet parm has been changed
+                if ('python' == node.type().name()) and not (node.parm('python').isAtDefault()):
+                    contents = node.parm("python").eval()
+                    randName = "snippet_" + tempfile.NamedTemporaryFile().name.split('/')[-1] + suffix + "_" + node.name()
+                    self.snippetsDict[randName] = [contents,"Python"]
+                    self.refreshList()
+                elif ('wrangle' in node.type().name()) and not (node.parm('snippet').isAtDefault()):
+                    contents = node.parm("snippet").eval()
+                    randName = "snippet_" + tempfile.NamedTemporaryFile().name.split('/')[-1] + suffix + "_" + node.name()
+                    self.snippetsDict[randName] = [contents,"VEX"]
+                    self.refreshList()
+        else:
+            randName = "snippet_" + tempfile.NamedTemporaryFile().name.split('/')[-1] + suffix
+            self.snippetsDict[randName] = ["//Your new snippet!\n\n@foo = 1.0;","VEX"]
+            self.refreshList()
         
     def newSnippetFromSelWrangles(self):
     
