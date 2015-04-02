@@ -7,6 +7,7 @@ This is a place to put all of the Houdini plugins, scripts, etc… That I work o
 ###Snippets Panel###
 
 Provides artists with a simple snippets manager, to save/use VEX and Python code. Pretty basic for now...
+
 ![snippets ui](https://dl.dropboxusercontent.com/u/2141398/snippet_v01_panel.png)
 
 ## Plugins
