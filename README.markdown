@@ -23,3 +23,8 @@ Consider these obsolete, but were good learning exercises at the time.
 ## Pipeline
 * **floo** - A semi-hacky way to manage jobs on a few computers.
 * **mkmov** - Simple Python script for converting images to mp4 using ffmpeg.
+ 
+## Scripts
+
+* **mkmov** - Simple ffmpeg wrapper to bake movies, since ffmpeg is pretty old (or secretly avconv) on Debian.
+* **htool.py** - Utility for setting Houdini versions in a given shell; called by bash function.
