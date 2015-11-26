@@ -3,6 +3,15 @@
 ## Overview
 This is a place to put all of the Houdini plugins, scripts, etc… That I work on, so they don't get lost, and in the off chance they prove useful, others can find them.
 
+## Config
+###Node Color Palette###
+
+Place this file in your $HOME/houdiniXX.YY/config directory, to get a custom palette. 
+
+The included example looks like this:
+
+![pallete](https://dl.dropboxusercontent.com/u/2141398/screenshot-area-2015-11-25-191702.png)
+
 ## Panels
 ###Snippets Panel###
 
